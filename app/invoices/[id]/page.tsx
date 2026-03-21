@@ -312,8 +312,24 @@ export default function InvoiceDetail() {
 
   return (
     <div className="p-6 max-w-4xl">
+      {/* Print CSS */}
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #invoice-print, #invoice-print * { visibility: visible; }
+          #invoice-print { position: absolute; left: 0; top: 0; width: 100%; }
+          #invoice-print table { width: 100%; border-collapse: collapse; }
+          #invoice-print thead { display: table-header-group; }
+          #invoice-print tbody { display: table-row-group; }
+          #invoice-print tr { display: table-row !important; page-break-inside: avoid; }
+          #invoice-print td, #invoice-print th { display: table-cell !important; }
+          #invoice-print * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .print-hidden { display: none !important; }
+        }
+      `}</style>
+
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-6 print:hidden print-hidden">
+      <div className="flex items-center justify-between mb-6 print-hidden print:hidden">
         <button onClick={() => router.back()} className="btn-secondary">
           <ArrowLeft size={16} /> Back
         </button>
