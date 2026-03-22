@@ -190,15 +190,24 @@ export default function InvoiceDetail() {
         6: { cellWidth: 27, halign: 'right' },
       },
       margin: { left: ML, right: 14 },
-      styles: { fontSize: 9 },
+      styles: { fontSize: 9, lineColor: [180, 180, 180], lineWidth: 0.3 },
+      tableLineColor: [150, 150, 150],
+      tableLineWidth: 0.4,
     })
 
-    const afterTableY = (doc as any).lastAutoTable.finalY + 6
+    const afterTableY = (doc as any).lastAutoTable.finalY
+
+    // Separator line after table, before Account Details
+    doc.setDrawColor(150, 150, 150)
+    doc.setLineWidth(0.5)
+    doc.line(ML, afterTableY + 3, MR, afterTableY + 3)
+
+    const sectionY = afterTableY + 8
 
     // ── 7. Account Details (left) + Totals (right) ───────────────────────────
     const TX = 118
-    let ay = afterTableY
-    let ty = afterTableY
+    let ay = sectionY
+    let ty = sectionY
 
     // Account Details
     doc.setFont('helvetica', 'bold')
@@ -245,7 +254,7 @@ export default function InvoiceDetail() {
     drawTotalRow('Total Amount (Roundoff)', fmt(Math.round(invoice.total)), ty, true); ty += ROW_H
 
     // ── 8. Amount in Words ───────────────────────────────────────────────────
-    const wY = Math.max(ay + 4, afterTableY + (ty - afterTableY) + 4)
+    const wY = Math.max(ay + 4, sectionY + (ty - sectionY) + 4)
     doc.setFillColor(255, 248, 220)
     doc.setDrawColor(...BLUE)
     doc.setLineWidth(0.4)
@@ -411,31 +420,31 @@ export default function InvoiceDetail() {
         </div>
 
         {/* 5. Items Table */}
-        <div className="px-6 py-4 border-b border-slate-200">
-          <table className="w-full text-sm border border-slate-300">
+        <div className="px-6 py-4">
+          <table className="w-full text-sm border-2 border-slate-400" style={{ borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ backgroundColor: PRIMARY }} className="text-white text-xs font-bold">
-                <th className="px-2 py-2 text-center border border-slate-500 w-10">S.NO</th>
-                <th className="px-3 py-2 text-left   border border-slate-500">DESCRIPTION</th>
-                <th className="px-2 py-2 text-center border border-slate-500 w-24">HSN Code</th>
-                <th className="px-2 py-2 text-center border border-slate-500 w-14">QTY</th>
-                <th className="px-2 py-2 text-center border border-slate-500 w-16">UNIT</th>
-                <th className="px-2 py-2 text-right  border border-slate-500 w-28">RATE</th>
-                <th className="px-2 py-2 text-right  border border-slate-500 w-28">AMOUNT (Rs)</th>
+                <th className="px-2 py-2 text-center border border-slate-400 w-10">S.NO</th>
+                <th className="px-3 py-2 text-left   border border-slate-400">DESCRIPTION</th>
+                <th className="px-2 py-2 text-center border border-slate-400 w-24">HSN Code</th>
+                <th className="px-2 py-2 text-center border border-slate-400 w-14">QTY</th>
+                <th className="px-2 py-2 text-center border border-slate-400 w-16">UNIT</th>
+                <th className="px-2 py-2 text-right  border border-slate-400 w-28">RATE</th>
+                <th className="px-2 py-2 text-right  border border-slate-400 w-28">AMOUNT (Rs)</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item, idx) => (
                 <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                  <td className="px-2 py-2 text-center border border-slate-200 text-slate-500">{idx + 1}</td>
-                  <td className="px-3 py-2 border border-slate-200 text-slate-800">{item.description}</td>
-                  <td className="px-2 py-2 text-center border border-slate-200 font-mono text-xs text-slate-600">
+                  <td className="px-2 py-2 text-center border border-slate-300 text-slate-500">{idx + 1}</td>
+                  <td className="px-3 py-2 border border-slate-300 text-slate-800">{item.description}</td>
+                  <td className="px-2 py-2 text-center border border-slate-300 font-mono text-xs text-slate-600">
                     {item.hsn_code || ''}
                   </td>
-                  <td className="px-2 py-2 text-center border border-slate-200">{item.quantity}</td>
-                  <td className="px-2 py-2 text-center border border-slate-200">{item.unit || 'Nos'}</td>
-                  <td className="px-2 py-2 text-right  border border-slate-200">&#8377; {fmt(item.rate)}</td>
-                  <td className="px-2 py-2 text-right  border border-slate-200 font-semibold">
+                  <td className="px-2 py-2 text-center border border-slate-300">{item.quantity}</td>
+                  <td className="px-2 py-2 text-center border border-slate-300">{item.unit || 'Nos'}</td>
+                  <td className="px-2 py-2 text-right  border border-slate-300">&#8377; {fmt(item.rate)}</td>
+                  <td className="px-2 py-2 text-right  border border-slate-300 font-semibold">
                     &#8377; {fmt(item.amount)}
                   </td>
                 </tr>
@@ -443,6 +452,9 @@ export default function InvoiceDetail() {
             </tbody>
           </table>
         </div>
+
+        {/* Separator line before Account Details */}
+        <div className="mx-6 my-1 border-t-2 border-slate-300" />
 
         {/* 6. Account Details (left) + Totals (right) */}
         <div className="px-6 py-4 flex gap-6 border-b border-slate-200">
