@@ -86,16 +86,29 @@ function NewInvoiceForm() {
     generateInvoiceNumber(withGst)
   }, [withGst, settings])
 
+  function getFinancialYear(): string {
+    const now = new Date()
+    const month = now.getMonth() + 1   // 1-based
+    const year  = now.getFullYear()
+    const fyStart = month >= 4 ? year : year - 1
+    const fyEnd   = fyStart + 1
+    return `${String(fyStart).slice(2)}-${String(fyEnd).slice(2)}`   // e.g. "25-26"
+  }
+
   async function generateInvoiceNumber(gst: boolean) {
     if (!settings) return
     setGeneratingNum(true)
-    const prefix = gst ? (settings.invoice_prefix_gst || 'GST') : (settings.invoice_prefix_non_gst || 'INV')
+    const prefix = gst
+      ? (settings.invoice_prefix_gst     || 'GST')
+      : (settings.invoice_prefix_non_gst || 'INV')
+    const fy = getFinancialYear()
+    const fullPrefix = `${prefix}/${fy}/`
     const { count } = await supabase
       .from('invoices')
       .select('*', { count: 'exact', head: true })
-      .like('invoice_number', `${prefix}-%`)
+      .like('invoice_number', `${fullPrefix}%`)
     const num = String((count ?? 0) + 1).padStart(4, '0')
-    setInvoiceNumber(`${prefix}-${num}`)
+    setInvoiceNumber(`${fullPrefix}${num}`)
     setGeneratingNum(false)
   }
 

@@ -421,30 +421,39 @@ export default function InvoiceDetail() {
 
         {/* 5. Items Table */}
         <div className="px-6 py-4">
-          <table className="w-full text-sm border-2 border-slate-400" style={{ borderCollapse: 'collapse' }}>
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse', border: '2px solid #94a3b8', tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '6%' }} />
+              <col style={{ width: '32%' }} />
+              <col style={{ width: '13%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '16%' }} />
+              <col style={{ width: '16%' }} />
+            </colgroup>
             <thead>
               <tr style={{ backgroundColor: PRIMARY }} className="text-white text-xs font-bold">
-                <th className="px-2 py-2 text-center border border-slate-400 w-10">S.NO</th>
+                <th className="px-2 py-2 text-center border border-slate-400">S.NO</th>
                 <th className="px-3 py-2 text-left   border border-slate-400">DESCRIPTION</th>
-                <th className="px-2 py-2 text-center border border-slate-400 w-24">HSN Code</th>
-                <th className="px-2 py-2 text-center border border-slate-400 w-14">QTY</th>
-                <th className="px-2 py-2 text-center border border-slate-400 w-16">UNIT</th>
-                <th className="px-2 py-2 text-right  border border-slate-400 w-28">RATE</th>
-                <th className="px-2 py-2 text-right  border border-slate-400 w-28">AMOUNT (Rs)</th>
+                <th className="px-2 py-2 text-center border border-slate-400">HSN Code</th>
+                <th className="px-2 py-2 text-center border border-slate-400">QTY</th>
+                <th className="px-2 py-2 text-center border border-slate-400">UNIT</th>
+                <th className="px-2 py-2 text-right  border border-slate-400">RATE</th>
+                <th className="px-2 py-2 text-right  border border-slate-400">AMOUNT (Rs)</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item, idx) => (
                 <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                  <td className="px-2 py-2 text-center border border-slate-300 text-slate-500">{idx + 1}</td>
-                  <td className="px-3 py-2 border border-slate-300 text-slate-800">{item.description}</td>
-                  <td className="px-2 py-2 text-center border border-slate-300 font-mono text-xs text-slate-600">
+                  <td className="px-2 py-2 text-center border border-slate-400 text-slate-500">{idx + 1}</td>
+                  <td className="px-3 py-2 border border-slate-400 text-slate-800">{item.description}</td>
+                  <td className="px-2 py-2 text-center border border-slate-400 font-mono text-xs text-slate-600">
                     {item.hsn_code || ''}
                   </td>
-                  <td className="px-2 py-2 text-center border border-slate-300">{item.quantity}</td>
-                  <td className="px-2 py-2 text-center border border-slate-300">{item.unit || 'Nos'}</td>
-                  <td className="px-2 py-2 text-right  border border-slate-300">&#8377; {fmt(item.rate)}</td>
-                  <td className="px-2 py-2 text-right  border border-slate-300 font-semibold">
+                  <td className="px-2 py-2 text-center border border-slate-400">{item.quantity}</td>
+                  <td className="px-2 py-2 text-center border border-slate-400">{item.unit || 'Nos'}</td>
+                  <td className="px-2 py-2 text-right  border border-slate-400">&#8377; {fmt(item.rate)}</td>
+                  <td className="px-2 py-2 text-right  border border-slate-400 font-semibold">
                     &#8377; {fmt(item.amount)}
                   </td>
                 </tr>
