@@ -8,7 +8,7 @@ import { Plus, Trash2, Search } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-const UNITS = ['Nos', 'Pcs', 'Kg', 'Gm', 'Ltr', 'Ml', 'Mtr', 'Cm', 'Box', 'Set', 'Pair', 'Bag', 'Roll', 'Sheet', 'Dozen', 'Hours', 'Days']
+const UNITS = ['Nos', 'Acers', 'Cents', 'Sqmt', 'Sqft', 'Months', 'Days', 'Hours', 'Pcs', 'Kg', 'Gm', 'Ltr', 'Ml', 'Mtr', 'Cm', 'Box', 'Set', 'Pair', 'Bag', 'Roll', 'Sheet', 'Dozen']
 
 type LineItem = {
   id: string

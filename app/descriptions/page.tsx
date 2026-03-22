@@ -7,7 +7,7 @@ import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-const UNITS = ['Nos', 'Pcs', 'Kg', 'Gm', 'Ltr', 'Ml', 'Mtr', 'Cm', 'Box', 'Set', 'Pair', 'Bag', 'Roll', 'Sheet', 'Dozen', 'Hours', 'Days']
+const UNITS = ['Nos', 'Acers', 'Cents', 'Sqmt', 'Sqft', 'Months', 'Days', 'Hours', 'Pcs', 'Kg', 'Gm', 'Ltr', 'Ml', 'Mtr', 'Cm', 'Box', 'Set', 'Pair', 'Bag', 'Roll', 'Sheet', 'Dozen']
 
 const empty = { description: '', hsn_code: '', unit: 'Nos', rate: '' }
 
