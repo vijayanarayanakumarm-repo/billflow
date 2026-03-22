@@ -7,6 +7,8 @@ import { Invoice, InvoiceItem, Customer, Settings } from '@/types'
 import StatusBadge from '@/components/StatusBadge'
 import { Download, Printer, ArrowLeft } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 // ─── Indian number to words ───────────────────────────────────────────────────
 function numberToWords(n: number): string {
   if (n === 0) return 'Zero'
@@ -30,6 +32,9 @@ function numberToWords(n: number): string {
   if (n > 0)         { result += convert(n) }
   return result.trim()
 }
+
+// Primary colour — slate-blue (matches sample)
+const PRIMARY = '#4b5f82'
 
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>()
@@ -58,108 +63,107 @@ export default function InvoiceDetail() {
     load()
   }, [id])
 
-  // Format number with 2 decimal places (no currency symbol)
   const fmt = (n: number) =>
     new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
 
-  // Format with ₹
-  const fmtRs = (n: number) =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(n)
-
-  // ─── PDF Download ───────────────────────────────────────────────────────────
+  // ─── PDF Download ────────────────────────────────────────────────────────────
   async function downloadPDF() {
     if (!invoice || !customer || !settings) return
     const { default: jsPDF } = await import('jspdf')
     const autoTable = (await import('jspdf-autotable')).default
     const doc = new jsPDF({ unit: 'mm', format: 'a4' })
 
-    const MAROON: [number, number, number] = [160, 0, 0]
-    const BLUE:   [number, number, number] = [52, 100, 160]
-    const LGRAY:  [number, number, number] = [248, 248, 248]
-    const W = 210
-    const ML = 14   // margin left
-    const MR = 196  // margin right (page width - 14)
+    const BLUE:  [number, number, number] = [75, 95, 130]   // #4b5f82
+    const LGRAY: [number, number, number] = [248, 248, 248]
+    const W  = 210
+    const ML = 14
+    const MR = 196
     const withGst = invoice.with_gst !== false
     const ROW_H = 8
 
-    // ── 1. INVOICE Banner (maroon) ──────────────────────────────────────────
-    doc.setFillColor(...MAROON)
-    doc.rect(0, 0, W, 18, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(22)
-    doc.setFont('helvetica', 'bold')
-    doc.text('INVOICE', W / 2, 13, { align: 'center' })
-
-    // ── 2. Logo + Company Name Band (blue) ──────────────────────────────────
+    // ── 1. Logo + Company Name Band ──────────────────────────────────────────
     doc.setFillColor(...BLUE)
-    doc.rect(0, 18, W, 18, 'F')
+    doc.rect(0, 0, W, 20, 'F')
 
     // Logo
     if (settings.logo_data) {
       try {
-        const fmt = settings.logo_data.includes('png') ? 'PNG' : 'JPEG'
-        doc.addImage(settings.logo_data, fmt, ML, 19.5, 13, 13)
-      } catch (_) {}
+        const logoFmt = settings.logo_data.includes('png') ? 'PNG' : 'JPEG'
+        doc.addImage(settings.logo_data, logoFmt, ML, 2, 14, 14)
+      } catch {
+        // skip logo errors
+      }
     } else {
       doc.setFillColor(255, 255, 255)
-      doc.circle(ML + 7, 27, 6.5, 'F')
+      doc.circle(ML + 7, 10, 6.5, 'F')
       doc.setTextColor(...BLUE)
       doc.setFontSize(7)
       doc.setFont('helvetica', 'bold')
       const initials = (settings.company_name || 'C')
         .split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-      doc.text(initials, ML + 7, 29, { align: 'center' })
+      doc.text(initials, ML + 7, 12, { align: 'center' })
     }
 
-    // Company name (italic)
+    // Company name
     doc.setTextColor(255, 255, 255)
-    doc.setFontSize(15)
+    doc.setFontSize(14)
     doc.setFont('helvetica', 'bolditalic')
-    doc.text((settings.company_name || '').toUpperCase(), ML + 18, 30)
+    doc.text((settings.company_name || '').toUpperCase(), ML + 18, 13)
 
-    // ── 3. Company Info + Date/Invoice No ───────────────────────────────────
+    // ── 2. Company Address (left) + Date / Invoice No (right) ───────────────
     doc.setTextColor(0, 0, 0)
     doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
-    let y = 44
+    let y = 30
 
     const addrLines = (settings.address || '').split('\n').filter(Boolean)
     addrLines.forEach((line) => { doc.text(line, ML, y); y += 5 })
-    if (settings.gstin)   { doc.text(`GSTIN : ${settings.gstin}`,   ML, y); y += 5 }
-    if (settings.email)   { doc.text(`\u2709 : ${settings.email}`,   ML, y); y += 5 }
-    if (settings.website) { doc.text(`\u{1F310} : ${settings.website}`, ML, y); y += 5 }
-    if (settings.phone)   { doc.text(`\u260E : ${settings.phone}`,   ML, y); y += 5 }
+    if (settings.gstin) { doc.text(`GSTIN : ${settings.gstin}`, ML, y); y += 5 }
 
-    // Right: Date + Invoice No
+    // Right col
     doc.setFont('helvetica', 'bold')
-    doc.text(`Date : ${invoice.issue_date}`,          MR, 44, { align: 'right' })
-    doc.text(`Invoice No : ${invoice.invoice_number}`, MR, 51, { align: 'right' })
+    doc.text(`Date :`,       MR - 40, 30)
+    doc.setFont('helvetica', 'normal')
+    doc.text(invoice.issue_date, MR, 30, { align: 'right' })
+    doc.setFont('helvetica', 'bold')
+    doc.text(`Invoice No :`, MR - 40, 37)
+    doc.setFont('helvetica', 'normal')
+    doc.text(invoice.invoice_number, MR, 37, { align: 'right' })
 
-    // ── 4. Separator line ───────────────────────────────────────────────────
-    const sepY = Math.max(y + 3, 77)
+    // ── 3. Separator ─────────────────────────────────────────────────────────
+    const sepY = Math.max(y + 3, 55)
     doc.setDrawColor(180, 180, 180)
     doc.setLineWidth(0.3)
     doc.line(ML, sepY, MR, sepY)
 
-    // ── 5. Bill To ──────────────────────────────────────────────────────────
-    let cy = sepY + 8
-    doc.setTextColor(...MAROON)
+    // ── 4. "Invoice" centred heading ─────────────────────────────────────────
     doc.setFont('helvetica', 'bold')
+    doc.setFontSize(14)
+    doc.setTextColor(0, 0, 0)
+    doc.text('Invoice', W / 2, sepY + 9, { align: 'center' })
+
+    // ── 5. Bill To ───────────────────────────────────────────────────────────
+    let cy = sepY + 18
     doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(0, 0, 0)
     doc.text('BILL TO', ML, cy); cy += 6
 
-    doc.setTextColor(0, 0, 0)
     doc.text(customer.company || customer.name, ML, cy); cy += 6
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
-    if (customer.company)  { doc.text(customer.name, ML, cy); cy += 5 }
-    if (customer.address)  {
+    if (customer.company) { doc.text(customer.name, ML, cy); cy += 5 }
+    if (customer.address) {
       customer.address.split('\n').filter(Boolean).forEach((l) => { doc.text(l, ML, cy); cy += 5 })
     }
-    if (customer.gstin)    { doc.text(`GSTIN : ${customer.gstin}`, ML, cy); cy += 5 }
+    if (customer.gstin) {
+      doc.setTextColor(100, 120, 160)
+      doc.text(`GSTIN : ${customer.gstin}`, ML, cy); cy += 5
+      doc.setTextColor(0, 0, 0)
+    }
 
-    // ── 6. Items Table ──────────────────────────────────────────────────────
-    const tableStartY = Math.max(cy + 4, 115)
+    // ── 6. Items Table ───────────────────────────────────────────────────────
+    const tableStartY = Math.max(cy + 4, 120)
     const tableBody = items.map((item, idx) => [
       (idx + 1).toString(),
       item.description,
@@ -174,7 +178,7 @@ export default function InvoiceDetail() {
       startY: tableStartY,
       head: [['S.NO', 'DESCRIPTION', 'HSN Code', 'QTY', 'UNIT', 'RATE', 'AMOUNT (Rs)']],
       body: tableBody,
-      headStyles: { fillColor: MAROON, textColor: [255, 255, 255], fontSize: 9, fontStyle: 'bold' },
+      headStyles: { fillColor: BLUE, textColor: [255, 255, 255], fontSize: 9, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: LGRAY },
       columnStyles: {
         0: { cellWidth: 12, halign: 'center' },
@@ -189,34 +193,32 @@ export default function InvoiceDetail() {
       styles: { fontSize: 9 },
     })
 
-    const afterTableY = (doc as any).lastAutoTable.finalY + 5
+    const afterTableY = (doc as any).lastAutoTable.finalY + 6
 
-    // ── 7. Account Details (left) + Totals (right) ──────────────────────────
-    const TX = 118  // totals left edge
-    let ay = afterTableY + 6  // account details y tracker
-    let ty = afterTableY + 2  // totals y tracker
+    // ── 7. Account Details (left) + Totals (right) ───────────────────────────
+    const TX = 118
+    let ay = afterTableY
+    let ty = afterTableY
 
-    // Account Details - left column
+    // Account Details
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
-    doc.setTextColor(...MAROON)
+    doc.setTextColor(0, 0, 0)
     doc.text('ACCOUNT DETAILS', ML, ay); ay += 6
 
     if (settings.bank_name) {
-      doc.text(`BANK NAME : ${settings.bank_name}`, ML, ay)
-      ay += 5
+      doc.text(`BANK NAME : ${settings.bank_name}`, ML, ay); ay += 5
     }
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(0, 0, 0)
     if (settings.branch)         { doc.text(`Branch : ${settings.branch}`,         ML, ay); ay += 5 }
     if (settings.account_name)   { doc.text(`A/C Name : ${settings.account_name}`, ML, ay); ay += 5 }
     if (settings.account_number) { doc.text(`A/C NO : ${settings.account_number}`, ML, ay); ay += 5 }
     if (settings.ifsc_code)      { doc.text(`IFSC : ${settings.ifsc_code}`,         ML, ay); ay += 5 }
 
-    // Totals - right column (draw bordered rows)
+    // Totals
     function drawTotalRow(label: string, amount: string, rowY: number, highlight: boolean) {
       if (highlight) {
-        doc.setFillColor(...MAROON)
+        doc.setFillColor(...BLUE)
         doc.rect(TX, rowY, MR - TX, ROW_H, 'F')
         doc.setTextColor(255, 255, 255)
         doc.setFont('helvetica', 'bold')
@@ -230,8 +232,8 @@ export default function InvoiceDetail() {
         doc.setFont('helvetica', 'normal')
       }
       doc.setFontSize(9)
-      doc.text(label,       TX + 2,      rowY + 5.5)
-      doc.text(`Rs ${amount}`, MR - 2, rowY + 5.5, { align: 'right' })
+      doc.text(label,            TX + 2, rowY + 5.5)
+      doc.text(`Rs ${amount}`,   MR - 2, rowY + 5.5, { align: 'right' })
     }
 
     drawTotalRow('Subtotal', fmt(invoice.subtotal), ty, false); ty += ROW_H
@@ -239,16 +241,16 @@ export default function InvoiceDetail() {
       drawTotalRow(`CGST@${invoice.cgst_rate ?? 9}%`, fmt(invoice.cgst_amount ?? 0), ty, false); ty += ROW_H
       drawTotalRow(`SGST@${invoice.sgst_rate ?? 9}%`, fmt(invoice.sgst_amount ?? 0), ty, false); ty += ROW_H
     }
-    drawTotalRow('Total Bill Amount',        fmt(invoice.total),              ty, true);  ty += ROW_H
-    drawTotalRow('Total Amount (Roundoff)',   fmt(Math.round(invoice.total)), ty, true);  ty += ROW_H
+    drawTotalRow('Total Bill Amount',      fmt(invoice.total),              ty, true); ty += ROW_H
+    drawTotalRow('Total Amount (Roundoff)', fmt(Math.round(invoice.total)), ty, true); ty += ROW_H
 
-    // ── 8. Amount in Words ──────────────────────────────────────────────────
-    const wY = Math.max(ay + 4, afterTableY + ty - afterTableY + 4)
+    // ── 8. Amount in Words ───────────────────────────────────────────────────
+    const wY = Math.max(ay + 4, afterTableY + (ty - afterTableY) + 4)
     doc.setFillColor(255, 248, 220)
-    doc.setDrawColor(...MAROON)
+    doc.setDrawColor(...BLUE)
     doc.setLineWidth(0.4)
     doc.rect(ML, wY, MR - ML, 10, 'FD')
-    doc.setTextColor(...MAROON)
+    doc.setTextColor(...BLUE)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(8.5)
     const rounded = Math.round(invoice.total)
@@ -257,17 +259,18 @@ export default function InvoiceDetail() {
       ML + 3, wY + 6.5
     )
 
-    // ── 9. Seal (circle, left of signature) + Signature (right) ───────────
-    const sealY = wY + 12
+    // ── 9. Seal + Signature ──────────────────────────────────────────────────
+    const sealY = wY + 14
 
-    // Seal
     if (settings.seal_data) {
       try {
         const sealFmt = settings.seal_data.includes('png') ? 'PNG' : 'JPEG'
         doc.addImage(settings.seal_data, sealFmt, MR - 88, sealY, 36, 36)
-      } catch (_) {}
+      } catch {
+        // skip
+      }
     } else {
-      doc.setDrawColor(...MAROON)
+      doc.setDrawColor(...BLUE)
       doc.setLineWidth(0.4)
       doc.circle(MR - 70, sealY + 18, 16, 'D')
       doc.setTextColor(180, 180, 180)
@@ -276,23 +279,22 @@ export default function InvoiceDetail() {
       doc.text('Seal', MR - 70, sealY + 19, { align: 'center' })
     }
 
-    // Signature
     if (settings.sign_data) {
       try {
         const signFmt = settings.sign_data.includes('png') ? 'PNG' : 'JPEG'
         doc.addImage(settings.sign_data, signFmt, MR - 46, sealY + 4, 38, 22)
-      } catch (_) {}
+      } catch {
+        // skip
+      }
     } else {
       doc.setDrawColor(180, 180, 180)
       doc.setLineWidth(0.3)
       doc.rect(MR - 46, sealY + 4, 38, 22, 'D')
       doc.setTextColor(180, 180, 180)
       doc.setFontSize(7)
-      doc.setFont('helvetica', 'normal')
       doc.text('Signature', MR - 27, sealY + 17, { align: 'center' })
     }
 
-    // "Authorised Signatory" label
     doc.setDrawColor(100, 100, 100)
     doc.setLineWidth(0.2)
     doc.line(MR - 46, sealY + 30, MR - 8, sealY + 30)
@@ -321,7 +323,7 @@ export default function InvoiceDetail() {
           #invoice-print table { width: 100%; border-collapse: collapse; }
           #invoice-print thead { display: table-header-group; }
           #invoice-print tbody { display: table-row-group; }
-          #invoice-print tr { display: table-row !important; page-break-inside: avoid; }
+          #invoice-print tr  { display: table-row !important; page-break-inside: avoid; }
           #invoice-print td, #invoice-print th { display: table-cell !important; }
           #invoice-print * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           .print-hidden { display: none !important; }
@@ -329,7 +331,7 @@ export default function InvoiceDetail() {
       `}</style>
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-6 print-hidden print:hidden">
+      <div className="flex items-center justify-between mb-6 print-hidden">
         <button onClick={() => router.back()} className="btn-secondary">
           <ArrowLeft size={16} /> Back
         </button>
@@ -343,19 +345,14 @@ export default function InvoiceDetail() {
         </div>
       </div>
 
-      {/* ── Invoice Card ─────────────────────────────────────────────────────── */}
+      {/* ── Invoice Card ──────────────────────────────────────────────────────── */}
       <div
-        className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm print:shadow-none print:border-0"
         id="invoice-print"
+        className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm"
         style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as React.CSSProperties}
       >
-        {/* 1. INVOICE Banner */}
-        <div className="bg-[#a00000] text-white text-center py-4">
-          <h1 className="text-3xl font-bold tracking-[0.25em]">INVOICE</h1>
-        </div>
-
-        {/* 2. Logo + Company Name */}
-        <div className="bg-[#3464a0] text-white px-6 py-3 flex items-center gap-4">
+        {/* 1. Header — Logo + Company Name */}
+        <div style={{ backgroundColor: PRIMARY }} className="text-white px-6 py-3 flex items-center gap-4">
           {settings?.logo_data ? (
             <img
               src={settings.logo_data}
@@ -372,16 +369,14 @@ export default function InvoiceDetail() {
           </h2>
         </div>
 
-        {/* 3. Company Info + Date/Invoice No */}
+        {/* 2. Company Info + Date / Invoice No */}
         <div className="px-6 py-4 flex justify-between border-b border-slate-200">
           <div className="text-sm text-slate-700 space-y-0.5">
             {settings?.address?.split('\n').filter(Boolean).map((line, i) => (
               <p key={i}>{line}</p>
             ))}
-            {settings?.gstin   && <p>GSTIN : {settings.gstin}</p>}
-            {settings?.email   && <p>✉ : {settings.email}</p>}
-            {settings?.website && <p>🌐 : {settings.website}</p>}
-            {settings?.phone   && <p>☎ : {settings.phone}</p>}
+            {settings?.gstin && <p>GSTIN : {settings.gstin}</p>}
+            {settings?.phone && <p>Phone : {settings.phone}</p>}
           </div>
           <div className="text-right text-sm space-y-1">
             <p><span className="font-semibold">Date :</span> {invoice.issue_date}</p>
@@ -395,16 +390,23 @@ export default function InvoiceDetail() {
           </div>
         </div>
 
+        {/* 3. "Invoice" centred heading */}
+        <div className="py-3 border-b border-slate-200 text-center">
+          <h1 className="text-xl font-bold tracking-wide text-slate-800">Invoice</h1>
+        </div>
+
         {/* 4. Bill To */}
         <div className="px-6 py-4 border-b border-slate-200">
-          <p className="text-[#a00000] font-bold text-sm mb-2">BILL TO</p>
+          <p className="font-bold text-sm mb-2 text-slate-800">BILL TO</p>
           <p className="font-bold text-slate-900 text-base">{customer.company || customer.name}</p>
-          {customer.company && <p className="text-slate-600 text-sm">{customer.name}</p>}
+          {customer.company && <p className="text-slate-700 text-sm">{customer.name}</p>}
           {customer.address?.split('\n').filter(Boolean).map((line, i) => (
             <p key={i} className="text-slate-600 text-sm">{line}</p>
           ))}
           {customer.gstin && (
-            <p className="text-slate-500 text-xs font-mono mt-0.5">GSTIN : {customer.gstin}</p>
+            <p className="text-sm font-mono mt-0.5" style={{ color: PRIMARY }}>
+              GSTIN : {customer.gstin}
+            </p>
           )}
         </div>
 
@@ -412,35 +414,29 @@ export default function InvoiceDetail() {
         <div className="px-6 py-4 border-b border-slate-200">
           <table className="w-full text-sm border border-slate-300">
             <thead>
-              <tr className="bg-[#a00000] text-white text-xs font-bold">
-                <th className="px-2 py-2 text-center border border-[#c00000] w-10">S.NO</th>
-                <th className="px-3 py-2 text-left border border-[#c00000]">DESCRIPTION</th>
-                <th className="px-2 py-2 text-center border border-[#c00000] w-24">HSN Code</th>
-                <th className="px-2 py-2 text-center border border-[#c00000] w-14">QTY</th>
-                <th className="px-2 py-2 text-center border border-[#c00000] w-16">UNIT</th>
-                <th className="px-2 py-2 text-right border border-[#c00000] w-28">RATE</th>
-                <th className="px-2 py-2 text-right border border-[#c00000] w-28">AMOUNT (Rs)</th>
+              <tr style={{ backgroundColor: PRIMARY }} className="text-white text-xs font-bold">
+                <th className="px-2 py-2 text-center border border-slate-500 w-10">S.NO</th>
+                <th className="px-3 py-2 text-left   border border-slate-500">DESCRIPTION</th>
+                <th className="px-2 py-2 text-center border border-slate-500 w-24">HSN Code</th>
+                <th className="px-2 py-2 text-center border border-slate-500 w-14">QTY</th>
+                <th className="px-2 py-2 text-center border border-slate-500 w-16">UNIT</th>
+                <th className="px-2 py-2 text-right  border border-slate-500 w-28">RATE</th>
+                <th className="px-2 py-2 text-right  border border-slate-500 w-28">AMOUNT (Rs)</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item, idx) => (
                 <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                  <td className="px-2 py-2 text-center border border-slate-200 text-slate-400">
-                    {idx + 1}
-                  </td>
-                  <td className="px-3 py-2 border border-slate-200 text-slate-800">
-                    {item.description}
-                  </td>
-                  <td className="px-2 py-2 text-center border border-slate-200 font-mono text-xs text-slate-500">
+                  <td className="px-2 py-2 text-center border border-slate-200 text-slate-500">{idx + 1}</td>
+                  <td className="px-3 py-2 border border-slate-200 text-slate-800">{item.description}</td>
+                  <td className="px-2 py-2 text-center border border-slate-200 font-mono text-xs text-slate-600">
                     {item.hsn_code || ''}
                   </td>
                   <td className="px-2 py-2 text-center border border-slate-200">{item.quantity}</td>
                   <td className="px-2 py-2 text-center border border-slate-200">{item.unit || 'Nos'}</td>
-                  <td className="px-2 py-2 text-right border border-slate-200">
-                    ₹ {fmt(item.rate)}
-                  </td>
-                  <td className="px-2 py-2 text-right border border-slate-200 font-semibold">
-                    ₹ {fmt(item.amount)}
+                  <td className="px-2 py-2 text-right  border border-slate-200">&#8377; {fmt(item.rate)}</td>
+                  <td className="px-2 py-2 text-right  border border-slate-200 font-semibold">
+                    &#8377; {fmt(item.amount)}
                   </td>
                 </tr>
               ))}
@@ -452,9 +448,9 @@ export default function InvoiceDetail() {
         <div className="px-6 py-4 flex gap-6 border-b border-slate-200">
           {/* Account Details */}
           <div className="flex-1 text-sm space-y-1">
-            <p className="text-[#a00000] font-bold">ACCOUNT DETAILS</p>
+            <p className="font-bold text-slate-800">ACCOUNT DETAILS</p>
             {settings?.bank_name && (
-              <p className="text-[#a00000] font-bold">BANK NAME : {settings.bank_name}</p>
+              <p className="font-bold text-slate-800">BANK NAME : {settings.bank_name}</p>
             )}
             {settings?.branch         && <p>Branch : {settings.branch}</p>}
             {settings?.account_name   && <p>A/C Name : {settings.account_name}</p>}
@@ -466,40 +462,46 @@ export default function InvoiceDetail() {
           <div className="w-80 text-sm border border-slate-200 self-start">
             <div className="flex justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
               <span className="text-slate-600">Subtotal</span>
-              <span className="font-semibold">₹ {fmt(invoice.subtotal)}</span>
+              <span className="font-semibold">&#8377; {fmt(invoice.subtotal)}</span>
             </div>
             {withGst && (
               <>
                 <div className="flex justify-between px-3 py-2 border-b border-slate-200">
                   <span className="text-slate-600">CGST@{invoice.cgst_rate ?? 9}%</span>
-                  <span>₹ {fmt(invoice.cgst_amount ?? 0)}</span>
+                  <span>&#8377; {fmt(invoice.cgst_amount ?? 0)}</span>
                 </div>
                 <div className="flex justify-between px-3 py-2 border-b border-slate-200">
                   <span className="text-slate-600">SGST@{invoice.sgst_rate ?? 9}%</span>
-                  <span>₹ {fmt(invoice.sgst_amount ?? 0)}</span>
+                  <span>&#8377; {fmt(invoice.sgst_amount ?? 0)}</span>
                 </div>
               </>
             )}
-            <div className="flex justify-between px-3 py-2 bg-[#a00000] text-white border-b border-[#c00000]">
+            <div
+              className="flex justify-between px-3 py-2 text-white border-b"
+              style={{ backgroundColor: PRIMARY }}
+            >
               <span className="font-bold">Total Bill Amount</span>
-              <span className="font-bold">₹ {fmt(invoice.total)}</span>
+              <span className="font-bold">&#8377; {fmt(invoice.total)}</span>
             </div>
-            <div className="flex justify-between px-3 py-2 bg-[#a00000] text-white">
+            <div
+              className="flex justify-between px-3 py-2 text-white"
+              style={{ backgroundColor: PRIMARY }}
+            >
               <span className="font-bold">Total Amount (Roundoff)</span>
-              <span className="font-bold">₹ {fmt(rounded)}</span>
+              <span className="font-bold">&#8377; {fmt(rounded)}</span>
             </div>
           </div>
         </div>
 
         {/* 7. Amount in Words */}
-        <div className="mx-6 my-4 bg-amber-50 border border-[#a00000] rounded px-4 py-2.5">
-          <p className="text-[#a00000] font-bold text-sm">
+        <div className="mx-6 my-3 bg-amber-50 rounded px-4 py-2.5" style={{ border: `1px solid ${PRIMARY}` }}>
+          <p className="font-bold text-sm" style={{ color: PRIMARY }}>
             TOTAL AMOUNT : Rs {fmt(rounded)} ({numberToWords(rounded).toUpperCase()} ONLY)
           </p>
         </div>
 
         {/* 8. Seal & Signature */}
-        <div className="px-6 pb-8 flex justify-end gap-6 items-end">
+        <div className="px-6 pb-8 flex justify-end gap-8 items-end">
           {/* Seal */}
           {settings?.seal_data ? (
             <div className="text-center">
@@ -508,17 +510,21 @@ export default function InvoiceDetail() {
             </div>
           ) : (
             <div className="text-center">
-              <div className="w-28 h-28 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs mx-auto">
+              <div
+                className="w-28 h-28 rounded-full border-2 border-dashed flex items-center justify-center text-xs mx-auto"
+                style={{ borderColor: PRIMARY, color: PRIMARY }}
+              >
                 Seal
               </div>
               <p className="text-xs text-slate-400 mt-1">Seal</p>
             </div>
           )}
+
           {/* Signature */}
           {settings?.sign_data ? (
             <div className="text-center">
               <img src={settings.sign_data} alt="Signature" className="w-36 h-20 object-contain mx-auto" />
-              <div className="border-t border-slate-300 mt-1 pt-1">
+              <div className="border-t border-slate-300 mt-2 pt-1">
                 <p className="text-xs text-slate-500 font-medium">Authorised Signatory</p>
               </div>
             </div>
@@ -527,7 +533,7 @@ export default function InvoiceDetail() {
               <div className="w-36 h-20 border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs">
                 Signature
               </div>
-              <div className="border-t border-slate-300 mt-1 pt-1">
+              <div className="border-t border-slate-300 mt-2 pt-1">
                 <p className="text-xs text-slate-500 font-medium">Authorised Signatory</p>
               </div>
             </div>
