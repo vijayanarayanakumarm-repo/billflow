@@ -52,7 +52,7 @@ export default function LoginPage() {
             <label className="label">Username</label>
             <input
               className="input"
-              placeholder="admin"
+              placeholder="Enter username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -79,9 +79,6 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
-          <p className="text-xs text-center text-slate-400 pt-1">
-            Default: <span className="font-mono">admin</span> / <span className="font-mono">admin123</span>
-          </p>
         </form>
       </div>
     </div>
