@@ -115,7 +115,10 @@ function NewInvoiceForm() {
       .from('invoices')
       .select('*', { count: 'exact', head: true })
       .like('invoice_number', `${fullPrefix}%`)
-    const num = String((count ?? 0) + 1).padStart(4, '0')
+    const startOffset = gst
+      ? (settings.invoice_start_gst     ?? 0)
+      : (settings.invoice_start_non_gst ?? 0)
+    const num = String((count ?? 0) + startOffset + 1).padStart(4, '0')
     setInvoiceNumber(`${fullPrefix}${num}`)
     setGeneratingNum(false)
   }

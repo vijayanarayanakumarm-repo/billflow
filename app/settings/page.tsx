@@ -18,6 +18,8 @@ const defaultForm: FormState = {
   website: '',
   invoice_prefix_gst: 'GST',
   invoice_prefix_non_gst: 'INV',
+  invoice_start_gst: 0,
+  invoice_start_non_gst: 0,
   default_cgst: 9,
   default_sgst: 9,
   account_name: '',
@@ -125,6 +127,8 @@ export default function SettingsPage() {
           website: data.website ?? '',
           invoice_prefix_gst: data.invoice_prefix_gst ?? 'GST',
           invoice_prefix_non_gst: data.invoice_prefix_non_gst ?? 'INV',
+          invoice_start_gst: data.invoice_start_gst ?? 0,
+          invoice_start_non_gst: data.invoice_start_non_gst ?? 0,
           default_cgst: data.default_cgst ?? 9,
           default_sgst: data.default_sgst ?? 9,
           account_name: data.account_name ?? '',
@@ -275,6 +279,38 @@ export default function SettingsPage() {
               onChange={(e) => set('invoice_prefix_non_gst', e.target.value)}
             />
             <p className="text-xs text-slate-400 mt-1">e.g. INV-0001</p>
+          </div>
+        </div>
+
+        {/* Starting sequence numbers */}
+        <div className="grid grid-cols-2 gap-4 pt-2">
+          <div>
+            <label className="label">Starting Number (GST)</label>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              placeholder="0"
+              value={form.invoice_start_gst}
+              onChange={(e) => set('invoice_start_gst', parseInt(e.target.value) || 0)}
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Set to 41 → next invoice will be 0042
+            </p>
+          </div>
+          <div>
+            <label className="label">Starting Number (Without GST)</label>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              placeholder="0"
+              value={form.invoice_start_non_gst}
+              onChange={(e) => set('invoice_start_non_gst', parseInt(e.target.value) || 0)}
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Set to 41 → next invoice will be 0042
+            </p>
           </div>
         </div>
       </div>

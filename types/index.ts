@@ -80,6 +80,8 @@ export type Settings = {
   invoice_prefix: string
   invoice_prefix_gst: string
   invoice_prefix_non_gst: string
+  invoice_start_gst: number
+  invoice_start_non_gst: number
   default_cgst: number
   default_sgst: number
   account_name: string
