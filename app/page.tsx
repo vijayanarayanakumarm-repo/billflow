@@ -7,6 +7,8 @@ import { Invoice } from '@/types'
 import StatusBadge from '@/components/StatusBadge'
 import { Users, TrendingUp, AlertCircle, Clock } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 type KPIs = {
   totalCustomers: number
   revenueThisMonth: number

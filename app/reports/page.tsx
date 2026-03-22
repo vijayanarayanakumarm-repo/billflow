@@ -16,6 +16,8 @@ import {
   Legend,
 } from 'recharts'
 
+export const dynamic = 'force-dynamic'
+
 type MonthData = { month: string; revenue: number }
 type StatusData = { name: string; value: number }
 type TopCustomer = { name: string; company: string; revenue: number; pct: number }

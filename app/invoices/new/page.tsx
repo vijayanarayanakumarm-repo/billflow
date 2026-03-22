@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase'
 import { Customer, Settings } from '@/types'
 import { Plus, Trash2, Search } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 const UNITS = ['Nos', 'Pcs', 'Kg', 'Gm', 'Ltr', 'Ml', 'Mtr', 'Cm', 'Box', 'Set', 'Pair', 'Bag', 'Roll', 'Sheet', 'Dozen', 'Hours', 'Days']
 
 type LineItem = {

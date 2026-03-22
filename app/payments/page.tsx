@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { Payment, Invoice, PaymentMethod } from '@/types'
 import { Plus, X } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 const METHOD_LABELS: Record<PaymentMethod, string> = {
   bank_transfer: 'Bank Transfer',
   upi: 'UPI',

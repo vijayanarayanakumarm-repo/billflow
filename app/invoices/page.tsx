@@ -7,6 +7,8 @@ import { Invoice, InvoiceStatus } from '@/types'
 import StatusBadge from '@/components/StatusBadge'
 import { Plus, Eye } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 const TABS: { label: string; value: string }[] = [
   { label: 'All', value: 'all' },
   { label: 'Draft', value: 'draft' },

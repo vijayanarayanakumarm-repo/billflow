@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Pencil, Trash2, X, Save, ShieldCheck, Eye, EyeOff } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 type User = {
   id: string
   username: string

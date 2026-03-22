@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase'
 import { Customer } from '@/types'
 import { Plus, Search, Pencil, Trash2, FileText, X } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 type FormData = {
   company: string
   name: string

@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { Settings } from '@/types'
 import { Save, Upload, X } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 type FormState = Omit<Settings, 'id' | 'default_tax_rate' | 'invoice_prefix'>
 
 const defaultForm: FormState = {
