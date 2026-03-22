@@ -1,3 +1,12 @@
+export type DescriptionMaster = {
+  id: string
+  description: string
+  hsn_code: string | null
+  unit: string
+  rate: number
+  created_at: string
+}
+
 export type Customer = {
   id: string
   name: string

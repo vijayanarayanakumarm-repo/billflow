@@ -12,16 +12,18 @@ import {
   Zap,
   LogOut,
   UserCog,
+  BookOpen,
 } from 'lucide-react'
 
 const navItems = [
-  { label: 'Dashboard',  href: '/',          icon: LayoutDashboard },
-  { label: 'Customers',  href: '/customers',  icon: Users },
-  { label: 'Invoices',   href: '/invoices',   icon: FileText },
-  { label: 'Payments',   href: '/payments',   icon: CreditCard },
-  { label: 'Reports',    href: '/reports',    icon: BarChart2 },
-  { label: 'Users',      href: '/users',      icon: UserCog },
-  { label: 'Settings',   href: '/settings',   icon: Settings },
+  { label: 'Dashboard',    href: '/',              icon: LayoutDashboard },
+  { label: 'Customers',    href: '/customers',      icon: Users },
+  { label: 'Items Master', href: '/descriptions',   icon: BookOpen },
+  { label: 'Invoices',     href: '/invoices',       icon: FileText },
+  { label: 'Payments',     href: '/payments',       icon: CreditCard },
+  { label: 'Reports',      href: '/reports',        icon: BarChart2 },
+  { label: 'Users',        href: '/users',          icon: UserCog },
+  { label: 'Settings',     href: '/settings',       icon: Settings },
 ]
 
 export default function Sidebar() {

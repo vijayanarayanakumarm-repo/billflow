@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Customer, Settings } from '@/types'
+import { Customer, Settings, DescriptionMaster } from '@/types'
 import { Plus, Trash2, Search } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -34,9 +34,15 @@ function NewInvoiceForm() {
   const params = useSearchParams()
   const prefillCustomerId = params.get('customer_id') ?? ''
 
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [settings, setSettings] = useState<Settings | null>(null)
-  const [withGst, setWithGst] = useState(true)
+  const [customers, setCustomers]         = useState<Customer[]>([])
+  const [descMaster, setDescMaster]       = useState<DescriptionMaster[]>([])
+  const [settings, setSettings]           = useState<Settings | null>(null)
+  const [withGst, setWithGst]             = useState(true)
+
+  // Per-row description search state
+  const [descSearch, setDescSearch]       = useState<Record<string, string>>({})
+  const [descDropdown, setDescDropdown]   = useState<Record<string, boolean>>({})
+  const descRefs                          = useRef<Record<string, HTMLDivElement | null>>({})
 
   // Customer search
   const [search, setSearch] = useState('')
@@ -57,10 +63,12 @@ function NewInvoiceForm() {
 
   useEffect(() => {
     async function load() {
-      const [{ data: cust }, { data: s }] = await Promise.all([
+      const [{ data: cust }, { data: s }, { data: desc }] = await Promise.all([
         supabase.from('customers').select('*').order('company'),
         supabase.from('settings').select('*').single(),
+        supabase.from('descriptions').select('*').order('description'),
       ])
+      setDescMaster((desc as DescriptionMaster[]) ?? [])
       const custList = (cust as Customer[]) ?? []
       setCustomers(custList)
 
@@ -112,16 +120,34 @@ function NewInvoiceForm() {
     setGeneratingNum(false)
   }
 
-  // Close dropdown on outside click
+  // Close customer dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowDropdown(false)
       }
+      // Close all description dropdowns
+      Object.entries(descRefs.current).forEach(([rowId, ref]) => {
+        if (ref && !ref.contains(e.target as Node)) {
+          setDescDropdown((prev) => ({ ...prev, [rowId]: false }))
+        }
+      })
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  function selectDescription(rowId: string, item: DescriptionMaster) {
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === rowId
+          ? { ...i, description: item.description, hsn_code: item.hsn_code ?? '', unit: item.unit, rate: String(item.rate) }
+          : i
+      )
+    )
+    setDescSearch((prev) => ({ ...prev, [rowId]: item.description }))
+    setDescDropdown((prev) => ({ ...prev, [rowId]: false }))
+  }
 
   const filteredCustomers = customers.filter((c) => {
     const q = search.toLowerCase()
@@ -340,12 +366,60 @@ function NewInvoiceForm() {
                     <tr key={item.id} className="border-b border-slate-50">
                       <td className="py-2 pr-3 text-slate-400 text-center">{idx + 1}</td>
                       <td className="py-2 pr-3">
-                        <input
-                          className="input"
-                          placeholder="Item description"
-                          value={item.description}
-                          onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                        />
+                        <div
+                          className="relative"
+                          ref={(el) => { descRefs.current[item.id] = el }}
+                        >
+                          <div className="relative">
+                            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <input
+                              className="input pl-8 pr-2"
+                              placeholder="Search or type description..."
+                              value={descSearch[item.id] ?? item.description}
+                              onChange={(e) => {
+                                const v = e.target.value
+                                setDescSearch((p) => ({ ...p, [item.id]: v }))
+                                updateItem(item.id, 'description', v)
+                                setDescDropdown((p) => ({ ...p, [item.id]: true }))
+                              }}
+                              onFocus={() => setDescDropdown((p) => ({ ...p, [item.id]: true }))}
+                            />
+                          </div>
+                          {descDropdown[item.id] && (
+                            <div className="absolute z-30 top-full mt-1 left-0 w-72 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                              {descMaster
+                                .filter((d) =>
+                                  d.description.toLowerCase().includes(
+                                    (descSearch[item.id] ?? '').toLowerCase()
+                                  )
+                                )
+                                .map((d) => (
+                                  <button
+                                    key={d.id}
+                                    type="button"
+                                    className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b border-slate-50 last:border-0"
+                                    onMouseDown={(e) => { e.preventDefault(); selectDescription(item.id, d) }}
+                                  >
+                                    <p className="font-medium text-slate-900">{d.description}</p>
+                                    <p className="text-xs text-slate-400">
+                                      {d.hsn_code ? `HSN: ${d.hsn_code} · ` : ''}
+                                      {d.unit}
+                                      {d.rate > 0 ? ` · ₹${d.rate}` : ''}
+                                    </p>
+                                  </button>
+                                ))}
+                              {descMaster.filter((d) =>
+                                d.description.toLowerCase().includes(
+                                  (descSearch[item.id] ?? '').toLowerCase()
+                                )
+                              ).length === 0 && (
+                                <p className="px-3 py-2 text-xs text-slate-400 italic">
+                                  No match — using typed text
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="py-2 pr-3">
                         <input
