@@ -7,19 +7,17 @@ import { Plus, Pencil, Trash2, Search, X } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
-const UNITS = ['Nos', 'Acers', 'Cents', 'Sqmt', 'Sqft', 'Months', 'Days', 'Hours', 'Pcs', 'Kg', 'Gm', 'Ltr', 'Ml', 'Mtr', 'Cm', 'Box', 'Set', 'Pair', 'Bag', 'Roll', 'Sheet', 'Dozen']
-
-const empty = { description: '', hsn_code: '', unit: 'Nos', rate: '' }
+const empty = { description: '', rate: '' }
 
 export default function DescriptionsPage() {
-  const [items, setItems]       = useState<DescriptionMaster[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [search, setSearch]     = useState('')
+  const [items, setItems]         = useState<DescriptionMaster[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [search, setSearch]       = useState('')
   const [showModal, setShowModal] = useState(false)
-  const [editing, setEditing]   = useState<DescriptionMaster | null>(null)
-  const [form, setForm]         = useState({ ...empty })
-  const [saving, setSaving]     = useState(false)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [editing, setEditing]     = useState<DescriptionMaster | null>(null)
+  const [form, setForm]           = useState({ ...empty })
+  const [saving, setSaving]       = useState(false)
+  const [deleteId, setDeleteId]   = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -41,12 +39,7 @@ export default function DescriptionsPage() {
 
   function openEdit(item: DescriptionMaster) {
     setEditing(item)
-    setForm({
-      description: item.description,
-      hsn_code:    item.hsn_code ?? '',
-      unit:        item.unit,
-      rate:        String(item.rate),
-    })
+    setForm({ description: item.description, rate: String(item.rate) })
     setShowModal(true)
   }
 
@@ -55,8 +48,6 @@ export default function DescriptionsPage() {
     setSaving(true)
     const payload = {
       description: form.description.trim(),
-      hsn_code:    form.hsn_code.trim() || null,
-      unit:        form.unit,
       rate:        parseFloat(form.rate) || 0,
     }
     if (editing) {
@@ -79,8 +70,7 @@ export default function DescriptionsPage() {
     new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
 
   const filtered = items.filter((i) =>
-    i.description.toLowerCase().includes(search.toLowerCase()) ||
-    (i.hsn_code ?? '').toLowerCase().includes(search.toLowerCase())
+    i.description.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -90,7 +80,7 @@ export default function DescriptionsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Description Master</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Pre-define items/services for quick selection in invoices
+            Pre-define items / services for quick selection in invoices
           </p>
         </div>
         <button onClick={openAdd} className="btn-primary">
@@ -103,7 +93,7 @@ export default function DescriptionsPage() {
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           className="input pl-9"
-          placeholder="Search description or HSN..."
+          placeholder="Search description..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -116,8 +106,6 @@ export default function DescriptionsPage() {
             <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wide">
               <th className="px-4 py-3 text-left">#</th>
               <th className="px-4 py-3 text-left">Description</th>
-              <th className="px-4 py-3 text-center">HSN Code</th>
-              <th className="px-4 py-3 text-center">Unit</th>
               <th className="px-4 py-3 text-right">Default Rate (₹)</th>
               <th className="px-4 py-3 text-center">Actions</th>
             </tr>
@@ -125,11 +113,11 @@ export default function DescriptionsPage() {
           <tbody className="divide-y divide-slate-100">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-slate-400">Loading...</td>
+                <td colSpan={4} className="px-4 py-10 text-center text-slate-400">Loading...</td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                <td colSpan={4} className="px-4 py-10 text-center text-slate-400">
                   {search ? 'No items match your search.' : 'No items yet. Click "Add Item" to start.'}
                 </td>
               </tr>
@@ -138,10 +126,6 @@ export default function DescriptionsPage() {
                 <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-3 text-slate-400">{idx + 1}</td>
                   <td className="px-4 py-3 font-medium text-slate-900">{item.description}</td>
-                  <td className="px-4 py-3 text-center font-mono text-xs text-slate-500">
-                    {item.hsn_code || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-center text-slate-600">{item.unit}</td>
                   <td className="px-4 py-3 text-right text-slate-700">
                     {item.rate > 0 ? `₹ ${fmt(item.rate)}` : '—'}
                   </td>
@@ -193,27 +177,6 @@ export default function DescriptionsPage() {
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   autoFocus
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label">HSN Code</label>
-                  <input
-                    className="input font-mono"
-                    placeholder="e.g. 998311"
-                    value={form.hsn_code}
-                    onChange={(e) => setForm({ ...form, hsn_code: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="label">Unit</label>
-                  <select
-                    className="input"
-                    value={form.unit}
-                    onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                  >
-                    {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-                  </select>
-                </div>
               </div>
               <div>
                 <label className="label">Default Rate (₹)</label>

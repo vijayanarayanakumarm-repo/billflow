@@ -176,7 +176,7 @@ export default function InvoiceDetail() {
 
     autoTable(doc, {
       startY: tableStartY,
-      head: [['S.NO', 'DESCRIPTION', 'HSN Code', 'QTY', 'UNIT', 'RATE', 'AMOUNT (Rs)']],
+      head: [['S.NO', 'DESCRIPTION', 'Ref No', 'QTY', 'UNIT', 'RATE', 'AMOUNT (Rs)']],
       body: tableBody,
       headStyles: { fillColor: BLUE, textColor: [255, 255, 255], fontSize: 9, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: LGRAY },
@@ -435,7 +435,7 @@ export default function InvoiceDetail() {
               <tr style={{ backgroundColor: PRIMARY }} className="text-white text-xs font-bold">
                 <th className="px-2 py-2 text-center border border-slate-400">S.NO</th>
                 <th className="px-3 py-2 text-left   border border-slate-400">DESCRIPTION</th>
-                <th className="px-2 py-2 text-center border border-slate-400">HSN Code</th>
+                <th className="px-2 py-2 text-center border border-slate-400">Ref No</th>
                 <th className="px-2 py-2 text-center border border-slate-400">QTY</th>
                 <th className="px-2 py-2 text-center border border-slate-400">UNIT</th>
                 <th className="px-2 py-2 text-right  border border-slate-400">RATE</th>

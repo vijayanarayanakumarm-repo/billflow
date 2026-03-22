@@ -351,7 +351,7 @@ function NewInvoiceForm() {
                 <tr className="text-left text-xs text-slate-500 uppercase border-b border-slate-100">
                   <th className="py-2 pr-3 w-10">Sl.No</th>
                   <th className="py-2 pr-3">Description</th>
-                  <th className="py-2 pr-3 w-28">HSN Code</th>
+                  <th className="py-2 pr-3 w-28">Ref No</th>
                   <th className="py-2 pr-3 w-20">QTY</th>
                   <th className="py-2 pr-3 w-28">Unit</th>
                   <th className="py-2 pr-3 w-28">Rate (₹)</th>
@@ -402,7 +402,7 @@ function NewInvoiceForm() {
                                   >
                                     <p className="font-medium text-slate-900">{d.description}</p>
                                     <p className="text-xs text-slate-400">
-                                      {d.hsn_code ? `HSN: ${d.hsn_code} · ` : ''}
+                                      {d.hsn_code ? `Ref: ${d.hsn_code} · ` : ''}
                                       {d.unit}
                                       {d.rate > 0 ? ` · ₹${d.rate}` : ''}
                                     </p>
@@ -424,7 +424,7 @@ function NewInvoiceForm() {
                       <td className="py-2 pr-3">
                         <input
                           className="input font-mono text-xs"
-                          placeholder="HSN"
+                          placeholder="Ref No"
                           value={item.hsn_code}
                           onChange={(e) => updateItem(item.id, 'hsn_code', e.target.value)}
                         />
