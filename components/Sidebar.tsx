@@ -3,32 +3,31 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  CreditCard,
-  BarChart2,
-  Settings,
-  Zap,
-  LogOut,
-  UserCog,
-  BookOpen,
+  LayoutDashboard, Users, FileText, CreditCard, BarChart2,
+  Settings, Zap, LogOut, UserCog, BookOpen,
+  UserCheck, CalendarDays, Wallet,
 } from 'lucide-react'
 
-const navItems = [
-  { label: 'Dashboard',    href: '/',              icon: LayoutDashboard },
-  { label: 'Customers',    href: '/customers',      icon: Users },
-  { label: 'Items Master', href: '/descriptions',   icon: BookOpen },
-  { label: 'Invoices',     href: '/invoices',       icon: FileText },
-  { label: 'Payments',     href: '/payments',       icon: CreditCard },
-  { label: 'Reports',      href: '/reports',        icon: BarChart2 },
-  { label: 'Users',        href: '/users',          icon: UserCog },
-  { label: 'Settings',     href: '/settings',       icon: Settings },
+const billingNav = [
+  { label: 'Dashboard',    href: '/',             icon: LayoutDashboard },
+  { label: 'Customers',    href: '/customers',     icon: Users },
+  { label: 'Items Master', href: '/descriptions',  icon: BookOpen },
+  { label: 'Invoices',     href: '/invoices',      icon: FileText },
+  { label: 'Payments',     href: '/payments',      icon: CreditCard },
+  { label: 'Reports',      href: '/reports',       icon: BarChart2 },
+  { label: 'Users',        href: '/users',         icon: UserCog },
+  { label: 'Settings',     href: '/settings',      icon: Settings },
+]
+
+const hrNav = [
+  { label: 'Employees',   href: '/employees',   icon: UserCheck },
+  { label: 'Attendance',  href: '/attendance',  icon: CalendarDays },
+  { label: 'Salary',      href: '/salary',      icon: Wallet },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
+  const router   = useRouter()
 
   function handleLogout() {
     localStorage.removeItem('billflow_session')
@@ -38,6 +37,20 @@ export default function Sidebar() {
   const session = typeof window !== 'undefined'
     ? JSON.parse(localStorage.getItem('billflow_session') ?? '{}')
     : {}
+
+  function navLink(href: string, label: string, Icon: React.ElementType) {
+    const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
+    return (
+      <Link key={href} href={href}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+          isActive ? 'bg-[#3b5bdb] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+        }`}
+      >
+        <Icon size={18} />
+        {label}
+      </Link>
+    )
+  }
 
   return (
     <aside className="fixed inset-y-0 left-0 w-64 bg-slate-900 flex flex-col z-30">
@@ -50,25 +63,26 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map(({ label, href, icon: Icon }) => {
-          const isActive =
-            href === '/' ? pathname === '/' : pathname.startsWith(href)
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-[#3b5bdb] text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Icon size={18} />
-              {label}
-            </Link>
-          )
-        })}
+      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
+        {/* Billing Section */}
+        <div>
+          <p className="px-3 pb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+            Billing
+          </p>
+          <div className="space-y-0.5">
+            {billingNav.map(({ label, href, icon }) => navLink(href, label, icon))}
+          </div>
+        </div>
+
+        {/* HR Section */}
+        <div>
+          <p className="px-3 pb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+            HR Management
+          </p>
+          <div className="space-y-0.5">
+            {hrNav.map(({ label, href, icon }) => navLink(href, label, icon))}
+          </div>
+        </div>
       </nav>
 
       {/* Footer */}
@@ -78,12 +92,10 @@ export default function Sidebar() {
             Signed in as <span className="font-semibold text-slate-300">{session.username}</span>
           </p>
         )}
-        <button
-          onClick={handleLogout}
+        <button onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors w-full"
         >
-          <LogOut size={18} />
-          Logout
+          <LogOut size={18} /> Logout
         </button>
       </div>
     </aside>

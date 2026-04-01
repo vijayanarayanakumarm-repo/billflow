@@ -68,6 +68,53 @@ export type Payment = {
   customers?: Customer
 }
 
+export type AttendanceStatus = 'present' | 'absent' | 'half_day' | 'leave'
+
+export type Employee = {
+  id: string
+  employee_code: string | null
+  name: string
+  designation: string | null
+  department: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  date_of_birth: string | null
+  date_of_joining: string | null
+  monthly_salary: number
+  bank_name: string | null
+  account_number: string | null
+  ifsc_code: string | null
+  pan_number: string | null
+  status: 'active' | 'inactive'
+  created_at: string
+}
+
+export type Attendance = {
+  id: string
+  employee_id: string
+  date: string
+  status: AttendanceStatus
+  created_at: string
+}
+
+export type SalaryRecord = {
+  id: string
+  employee_id: string
+  month: string
+  monthly_salary: number
+  total_working_days: number
+  present_days: number
+  half_days: number
+  absent_days: number
+  earned_salary: number
+  status: 'pending' | 'paid'
+  paid_date: string | null
+  notes: string | null
+  created_at: string
+  employees?: Employee
+}
+
 export type Settings = {
   id: string
   company_name: string
