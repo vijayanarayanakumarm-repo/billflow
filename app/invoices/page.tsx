@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Invoice, InvoiceStatus } from '@/types'
 import StatusBadge from '@/components/StatusBadge'
-import { Plus, Eye } from 'lucide-react'
+import { Plus, Eye, Pencil } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -122,9 +122,16 @@ export default function Invoices() {
                       <StatusBadge status={inv.status} />
                     </td>
                     <td className="px-6 py-3">
-                      <Link href={`/invoices/${inv.id}`} className="p-1.5 rounded hover:bg-slate-100 text-slate-600 inline-flex" title="View">
-                        <Eye size={15} />
-                      </Link>
+                      <div className="flex items-center gap-1">
+                        {inv.status === 'draft' && (
+                          <Link href={`/invoices/${inv.id}/edit`} className="p-1.5 rounded hover:bg-blue-50 text-slate-400 hover:text-[#3b5bdb] inline-flex" title="Edit Draft">
+                            <Pencil size={15} />
+                          </Link>
+                        )}
+                        <Link href={`/invoices/${inv.id}`} className="p-1.5 rounded hover:bg-slate-100 text-slate-600 inline-flex" title="View">
+                          <Eye size={15} />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))

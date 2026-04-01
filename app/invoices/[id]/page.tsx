@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Invoice, InvoiceItem, Customer, Settings } from '@/types'
 import StatusBadge from '@/components/StatusBadge'
-import { Download, Printer, ArrowLeft } from 'lucide-react'
+import { Download, Printer, ArrowLeft, Pencil } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -345,6 +345,11 @@ export default function InvoiceDetail() {
           <ArrowLeft size={16} /> Back
         </button>
         <div className="flex items-center gap-3">
+          {invoice?.status === 'draft' && (
+            <button onClick={() => router.push(`/invoices/${invoice.id}/edit`)} className="btn-secondary">
+              <Pencil size={16} /> Edit
+            </button>
+          )}
           <button onClick={() => window.print()} className="btn-secondary">
             <Printer size={16} /> Print
           </button>
