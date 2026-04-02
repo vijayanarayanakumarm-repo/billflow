@@ -108,11 +108,23 @@ export type SalaryRecord = {
   half_days: number
   absent_days: number
   earned_salary: number
+  advance_amount: number
+  net_salary: number
   status: 'pending' | 'paid'
   paid_date: string | null
   notes: string | null
   created_at: string
   employees?: Employee
+}
+
+export type SalaryAdvance = {
+  id: string
+  employee_id: string
+  amount: number
+  month: string
+  reason: string | null
+  status: 'pending' | 'adjusted'
+  created_at: string
 }
 
 export type Settings = {

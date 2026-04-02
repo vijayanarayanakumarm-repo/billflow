@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Employee, SalaryRecord } from '@/types'
+import { Employee, SalaryRecord, SalaryAdvance } from '@/types'
 import { Calculator, ChevronLeft, ChevronRight, CheckCircle, Download } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -72,16 +72,20 @@ export default function SalaryPage() {
 
     const lastDay = String(daysInMonth).padStart(2, '0')
 
-    // Fetch attendance AND govt holidays together
-    const [{ data: attData, error: attErr }, { data: holData }] = await Promise.all([
+    // Fetch attendance, govt holidays, and pending advances together
+    const [{ data: attData, error: attErr }, { data: holData }, { data: advData }] = await Promise.all([
       supabase.from('attendance')
-        .select('employee_id, date, status')   // include date for validation
+        .select('employee_id, date, status')
         .gte('date', `${monthStr}-01`)
         .lte('date', `${monthStr}-${lastDay}`),
       supabase.from('holidays')
         .select('date')
         .gte('date', `${monthStr}-01`)
         .lte('date', `${monthStr}-${lastDay}`),
+      supabase.from('salary_advances')
+        .select('*')
+        .eq('month', monthStr)
+        .eq('status', 'pending'),
     ])
 
     if (attErr) {
@@ -126,6 +130,8 @@ export default function SalaryPage() {
 
     setAttWarnings([]) // clear any previous warnings
 
+    const advList = (advData ?? []) as SalaryAdvance[]
+
     const records = (empData as Employee[]).map((emp) => {
       const empAtt = attList.filter((a) => a.employee_id === emp.id)
 
@@ -143,15 +149,28 @@ export default function SalaryPage() {
         ((emp.monthly_salary / daysInMonth) * (daysInMonth - unpaidDays)).toFixed(2)
       )
 
+      // Sum pending advances for this employee this month
+      const advanceAmount = parseFloat(
+        advList
+          .filter((a) => a.employee_id === emp.id)
+          .reduce((s, a) => s + a.amount, 0)
+          .toFixed(2)
+      )
+
+      // Net salary = earned − advances (cannot go below 0)
+      const netSalary = parseFloat(Math.max(0, earnedSalary - advanceAmount).toFixed(2))
+
       return {
         employee_id:        emp.id,
         month:              monthStr,
         monthly_salary:     emp.monthly_salary,
-        total_working_days: workingDays,   // excl. Sundays + Govt Holidays
-        present_days:       paidDays,      // present + half_day
-        half_days:          govHolDays.size, // govt holidays count (info)
-        absent_days:        unpaidDays,    // absent + leave + unmarked working days
+        total_working_days: workingDays,
+        present_days:       paidDays,
+        half_days:          govHolDays.size,
+        absent_days:        unpaidDays,
         earned_salary:      earnedSalary,
+        advance_amount:     advanceAmount,
+        net_salary:         netSalary,
         status:             'pending',
       }
     })
@@ -159,6 +178,12 @@ export default function SalaryPage() {
     const { error: upsertErr } = await supabase
       .from('salary_records')
       .upsert(records, { onConflict: 'employee_id,month' })
+
+    // Mark advances as adjusted
+    const advIds = advList.map((a) => a.id)
+    if (advIds.length > 0) {
+      await supabase.from('salary_advances').update({ status: 'adjusted' }).in('id', advIds)
+    }
 
     if (upsertErr) {
       alert('Error saving salary records: ' + upsertErr.message)
@@ -195,16 +220,18 @@ export default function SalaryPage() {
 
   // ── Export CSV ────────────────────────────────────────────────────────
   function exportCSV() {
-    const headers = ['Employee', 'Designation', 'Days in Month', 'Absent', 'Leave', 'Deducted Days', 'Monthly Salary', 'Earned Salary', 'Status', 'Paid Date']
+    const headers = ['Employee', 'Designation', 'Days in Month', 'Working Days', 'Paid Days', 'Unpaid Days', 'Monthly Salary', 'Earned Salary', 'Advance', 'Net Payable', 'Status', 'Paid Date']
     const rows = salaryRows.map((r) => [
       r.employee.name,
       r.employee.designation ?? '',
+      new Date(year, month, 0).getDate(),
       r.total_working_days,
-      r.present_days,   // absent count
-      r.half_days,      // leave count
-      r.absent_days,    // total deduction
+      r.present_days,
+      r.absent_days,
       r.monthly_salary,
       r.earned_salary,
+      r.advance_amount || 0,
+      netSalaryOf(r),
       r.status,
       r.paid_date ?? '',
     ])
@@ -216,9 +243,12 @@ export default function SalaryPage() {
     URL.revokeObjectURL(url)
   }
 
+  const netSalaryOf  = (r: SalaryRow) => r.net_salary > 0 ? r.net_salary : r.earned_salary
   const totalPayroll = salaryRows.reduce((s, r) => s + r.earned_salary, 0)
-  const totalPaid    = salaryRows.filter((r) => r.status === 'paid').reduce((s, r) => s + r.earned_salary, 0)
-  const totalPending = salaryRows.filter((r) => r.status === 'pending').reduce((s, r) => s + r.earned_salary, 0)
+  const totalAdvances = salaryRows.reduce((s, r) => s + (r.advance_amount || 0), 0)
+  const totalNetPayroll = salaryRows.reduce((s, r) => s + netSalaryOf(r), 0)
+  const totalPaid    = salaryRows.filter((r) => r.status === 'paid').reduce((s, r) => s + netSalaryOf(r), 0)
+  const totalPending = salaryRows.filter((r) => r.status === 'pending').reduce((s, r) => s + netSalaryOf(r), 0)
   const pendingCount = salaryRows.filter((r) => r.status === 'pending').length
 
   return (
@@ -272,11 +302,16 @@ export default function SalaryPage() {
 
       {/* Summary Cards */}
       {salaryRows.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-4 gap-4 mb-6">
           <div className="card p-5">
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Total Payroll</p>
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Gross Payroll</p>
             <p className="text-2xl font-bold text-slate-900 mt-1">₹ {fmt(totalPayroll)}</p>
             <p className="text-xs text-slate-400 mt-0.5">{salaryRows.length} employees</p>
+          </div>
+          <div className="card p-5">
+            <p className="text-xs text-red-500 font-medium uppercase tracking-wide">Advances Adjusted</p>
+            <p className="text-2xl font-bold text-red-600 mt-1">₹ {fmt(totalAdvances)}</p>
+            <p className="text-xs text-slate-400 mt-0.5">deducted from payroll</p>
           </div>
           <div className="card p-5">
             <p className="text-xs text-emerald-600 font-medium uppercase tracking-wide">Paid</p>
@@ -343,6 +378,8 @@ export default function SalaryPage() {
                 <th className="px-4 py-3 text-center">Unpaid Days</th>
                 <th className="px-4 py-3 text-right">Monthly Salary</th>
                 <th className="px-4 py-3 text-right">Earned Salary</th>
+                <th className="px-4 py-3 text-right">Advance</th>
+                <th className="px-4 py-3 text-right">Net Payable</th>
                 <th className="px-4 py-3 text-center">Status</th>
                 <th className="px-4 py-3 text-center">Action</th>
               </tr>
@@ -376,7 +413,15 @@ export default function SalaryPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right text-slate-600">₹ {fmt(row.monthly_salary)}</td>
-                  <td className="px-4 py-3 text-right font-bold text-slate-900">₹ {fmt(row.earned_salary)}</td>
+                  <td className="px-4 py-3 text-right text-slate-700">₹ {fmt(row.earned_salary)}</td>
+                  <td className="px-4 py-3 text-right">
+                    {row.advance_amount > 0 ? (
+                      <span className="text-red-600 font-medium">− ₹ {fmt(row.advance_amount)}</span>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-right font-bold text-slate-900">₹ {fmt(row.net_salary > 0 ? row.net_salary : row.earned_salary)}</td>
                   <td className="px-4 py-3 text-center">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
                       row.status === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
@@ -404,7 +449,15 @@ export default function SalaryPage() {
                 <td className="px-4 py-3 text-right font-medium">
                   ₹ {fmt(salaryRows.reduce((s, r) => s + r.monthly_salary, 0))}
                 </td>
-                <td className="px-4 py-3 text-right font-bold text-emerald-300">₹ {fmt(totalPayroll)}</td>
+                <td className="px-4 py-3 text-right font-medium text-slate-300">₹ {fmt(totalPayroll)}</td>
+                <td className="px-4 py-3 text-right text-red-300 font-medium">
+                  {salaryRows.some((r) => r.advance_amount > 0)
+                    ? `− ₹ ${fmt(salaryRows.reduce((s, r) => s + (r.advance_amount || 0), 0))}`
+                    : '—'}
+                </td>
+                <td className="px-4 py-3 text-right font-bold text-emerald-300">
+                  ₹ {fmt(salaryRows.reduce((s, r) => s + (r.net_salary > 0 ? r.net_salary : r.earned_salary), 0))}
+                </td>
                 <td colSpan={2} className="px-4 py-3 text-center text-xs text-slate-300">
                   {salaryRows.filter((r) => r.status === 'paid').length}/{salaryRows.length} paid
                 </td>
