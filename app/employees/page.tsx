@@ -2,8 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Employee, SalaryAdvance } from '@/types'
-import { Plus, Pencil, Trash2, Search, X, UserCheck, UserX, Banknote } from 'lucide-react'
+import { Employee } from '@/types'
+import { Plus, Pencil, Trash2, Search, X, UserCheck, UserX } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,15 +41,6 @@ export default function EmployeesPage() {
   const [deleteId, setDeleteId]       = useState<string | null>(null)
   const [activeTab, setActiveTab]     = useState<'personal' | 'salary' | 'bank'>('personal')
 
-  // Salary Advance state
-  const [advanceEmp, setAdvanceEmp]       = useState<Employee | null>(null)
-  const [advances, setAdvances]           = useState<SalaryAdvance[]>([])
-  const [advLoading, setAdvLoading]       = useState(false)
-  const [advForm, setAdvForm]             = useState({ amount: '', month: '', reason: '' })
-  const [advSaving, setAdvSaving]         = useState(false)
-
-  const now = new Date()
-  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
   async function load() {
     setLoading(true)
@@ -124,59 +115,6 @@ export default function EmployeesPage() {
     await supabase.from('employees').delete().eq('id', id)
     setDeleteId(null)
     load()
-  }
-
-  // ── Salary Advance ─────────────────────────────────────────────────────
-  async function openAdvances(emp: Employee) {
-    setAdvanceEmp(emp)
-    setAdvForm({ amount: '', month: defaultMonth, reason: '' })
-    setAdvLoading(true)
-    const { data } = await supabase
-      .from('salary_advances')
-      .select('*')
-      .eq('employee_id', emp.id)
-      .order('created_at', { ascending: false })
-    setAdvances((data as SalaryAdvance[]) ?? [])
-    setAdvLoading(false)
-  }
-
-  async function handleAddAdvance() {
-    if (!advanceEmp) return
-    const amt = parseFloat(advForm.amount)
-    if (!amt || amt <= 0) return alert('Enter a valid advance amount.')
-    if (amt > advanceEmp.monthly_salary) {
-      return alert(`Advance cannot exceed monthly salary of ₹ ${fmt(advanceEmp.monthly_salary)}.`)
-    }
-    if (!advForm.month) return alert('Select a month for the advance.')
-    setAdvSaving(true)
-    const { error } = await supabase.from('salary_advances').insert({
-      employee_id: advanceEmp.id,
-      amount:      amt,
-      month:       advForm.month,
-      reason:      advForm.reason.trim() || null,
-      status:      'pending',
-    })
-    if (error) alert('Error: ' + error.message)
-    else {
-      setAdvForm({ amount: '', month: defaultMonth, reason: '' })
-      const { data } = await supabase
-        .from('salary_advances').select('*')
-        .eq('employee_id', advanceEmp.id)
-        .order('created_at', { ascending: false })
-      setAdvances((data as SalaryAdvance[]) ?? [])
-    }
-    setAdvSaving(false)
-  }
-
-  async function handleDeleteAdvance(id: string) {
-    await supabase.from('salary_advances').delete().eq('id', id)
-    if (advanceEmp) {
-      const { data } = await supabase
-        .from('salary_advances').select('*')
-        .eq('employee_id', advanceEmp.id)
-        .order('created_at', { ascending: false })
-      setAdvances((data as SalaryAdvance[]) ?? [])
-    }
   }
 
   const fmt = (n: number) =>
@@ -276,9 +214,6 @@ export default function EmployeesPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-center gap-2">
-                    <button onClick={() => openAdvances(emp)} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded" title="Salary Advance">
-                      <Banknote size={14} />
-                    </button>
                     <button onClick={() => openEdit(emp)} className="p-1.5 text-slate-400 hover:text-[#3b5bdb] hover:bg-blue-50 rounded" title="Edit">
                       <Pencil size={14} />
                     </button>
@@ -406,106 +341,6 @@ export default function EmployeesPage() {
               <button onClick={handleSave} disabled={saving} className="btn-primary">
                 {saving ? 'Saving...' : editing ? 'Update Employee' : 'Add Employee'}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Salary Advance Modal */}
-      {advanceEmp && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
-              <div>
-                <h2 className="font-semibold text-slate-900 text-lg">Salary Advance</h2>
-                <p className="text-sm text-slate-500">{advanceEmp.name} · Monthly Salary: ₹ {fmt(advanceEmp.monthly_salary)}</p>
-              </div>
-              <button onClick={() => setAdvanceEmp(null)} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
-            </div>
-
-            {/* Add Advance Form */}
-            <div className="px-6 py-4 border-b border-slate-100 flex-shrink-0 bg-slate-50">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Add New Advance</p>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1">Amount (₹) *</label>
-                  <input
-                    className={inputClass}
-                    type="number" min="1" step="100"
-                    placeholder={`Max ${fmt(advanceEmp.monthly_salary)}`}
-                    value={advForm.amount}
-                    onChange={(e) => setAdvForm({ ...advForm, amount: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1">Month *</label>
-                  <input
-                    className={inputClass}
-                    type="month"
-                    value={advForm.month}
-                    onChange={(e) => setAdvForm({ ...advForm, month: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1">Reason</label>
-                  <input
-                    className={inputClass}
-                    placeholder="Medical, Personal..."
-                    value={advForm.reason}
-                    onChange={(e) => setAdvForm({ ...advForm, reason: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="mt-3 flex justify-end">
-                <button onClick={handleAddAdvance} disabled={advSaving} className="btn-primary text-sm py-1.5">
-                  <Plus size={14} /> {advSaving ? 'Adding...' : 'Add Advance'}
-                </button>
-              </div>
-            </div>
-
-            {/* Advances List */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Advance History</p>
-              {advLoading ? (
-                <p className="text-center text-slate-400 py-8">Loading...</p>
-              ) : advances.length === 0 ? (
-                <p className="text-center text-slate-400 py-8">No advances recorded yet.</p>
-              ) : (
-                <div className="space-y-2">
-                  {advances.map((adv) => (
-                    <div key={adv.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <p className="font-semibold text-slate-800">₹ {fmt(adv.amount)}</p>
-                          <p className="text-xs text-slate-500">{adv.month}{adv.reason ? ` · ${adv.reason}` : ''}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          adv.status === 'adjusted'
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-amber-50 text-amber-700'
-                        }`}>
-                          {adv.status === 'adjusted' ? 'Adjusted' : 'Pending'}
-                        </span>
-                        {adv.status === 'pending' && (
-                          <button
-                            onClick={() => handleDeleteAdvance(adv.id)}
-                            className="p-1 text-slate-400 hover:text-red-500 rounded"
-                            title="Delete advance"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="px-6 py-3 border-t border-slate-100 flex-shrink-0">
-              <button onClick={() => setAdvanceEmp(null)} className="btn-secondary w-full">Close</button>
             </div>
           </div>
         </div>

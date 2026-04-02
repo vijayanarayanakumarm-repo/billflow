@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Users, FileText, CreditCard, BarChart2,
   Settings, Zap, LogOut, UserCog, BookOpen,
-  UserCheck, CalendarDays, Wallet,
+  UserCheck, CalendarDays, Wallet, Banknote,
 } from 'lucide-react'
 
 const billingNav = [
@@ -22,6 +22,7 @@ const billingNav = [
 const hrNav = [
   { label: 'Employees',   href: '/employees',   icon: UserCheck },
   { label: 'Attendance',  href: '/attendance',  icon: CalendarDays },
+  { label: 'Advances',    href: '/advances',    icon: Banknote },
   { label: 'Salary',      href: '/salary',      icon: Wallet },
 ]
 

@@ -123,7 +123,7 @@ export type SalaryAdvance = {
   amount: number
   month: string
   reason: string | null
-  status: 'pending' | 'adjusted'
+  status: 'pending' | 'paid' | 'adjusted'
   created_at: string
 }
 
